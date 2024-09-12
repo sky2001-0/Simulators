@@ -1,7 +1,6 @@
 #ifndef SIMULATORS_HH
 #define SIMULATORS_HH
 
-#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -25,6 +24,8 @@ namespace simulators_support
         std::exit(EXIT_FAILURE);
       }
     }
+
+    std::filesystem::create_directory(result_dirpath);
   }
 }
 
