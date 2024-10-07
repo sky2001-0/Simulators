@@ -13,7 +13,10 @@
 
 namespace DemkovOsherovModel
 {
-
+/*
+  Calculation
+    2 i \partial_t = 2 v t \ketbra{0}{0} + 2 E / \hbar \ketbra{j}{j} + \Omega \ketbra{0}{j} + \Omega^* \ketbra{j}{0}
+*/
 template <std::size_t size_>
 class Simulator
 {
@@ -106,6 +109,14 @@ public:
 
   ~Simulator() noexcept = default;
 
+  Simulator(const Simulator& rh) = delete;
+
+  Simulator(Simulator&& rh) = delete;
+
+  Simulator& operator=(const Simulator& rh) = delete;
+
+  Simulator& operator=(Simulator&& rh) = delete;
+
 
   double get_transition() const noexcept
   {
@@ -183,15 +194,19 @@ public:
 
 namespace ps_ortho1S2P
 {
-  constexpr double split = (
-    ps::ps_ortho2P2_binding_energy - ps::ps_ortho2P0_binding_energy
+  constexpr double split_02 = (
+    ps::ortho2P2_binding_energy - ps::ortho2P0_binding_energy
+  ) / u::hbar;
+
+  constexpr double split_12 = (
+    ps::ortho2P2_binding_energy - ps::ortho2P1_binding_energy
   ) / u::hbar;
 
   const double gamma0 = (
     std::pow(2., 17)
     / std::pow(3., 10)
     / std::pow(u::c, 4)
-    * std::pow(ps::transition_angfreq, 3)
+    * std::pow(ps::trans_angfreq, 3)
     * std::pow(u::hbar / u::m_e, 2)
     / u::alpha
   );
@@ -199,7 +214,7 @@ namespace ps_ortho1S2P
 
   double Calc_norml(const double adiabatic, const double rabi_rate) noexcept
   {
-    return rabi_rate * split / adiabatic;
+    return rabi_rate * split_02 / adiabatic;
   }
 
 
@@ -222,24 +237,14 @@ namespace ps_ortho1S2P
     } else if constexpr (size == 3) {
       if (magnetic_qnumber == 0) {
         return {
-          {
-            0.,
-            2. * (
-              ps::ps_ortho2P2_binding_energy - ps::ps_ortho2P0_binding_energy
-            ) / u::hbar / norml
-          },
+          {0., 2. * split_02 / norml},
           {adiabatic * 2. / 3., adiabatic * 4. / 3.},
           {4. / 3. * gamma, gamma}
         };
 
       } else if (std::abs(magnetic_qnumber) == 1) {
         return {
-          {
-            0.,
-            2. * (
-              ps::ps_ortho2P2_binding_energy - ps::ps_ortho2P1_binding_energy
-            ) / u::hbar / norml
-          },
+          {0., 2. * split_12 / norml},
           {adiabatic, adiabatic},
           {3. / 2. * gamma, 3. / 2. * gamma}
         };

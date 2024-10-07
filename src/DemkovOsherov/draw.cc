@@ -21,10 +21,10 @@ using namespace DemkovOsherovModel;
 constexpr std::size_t size_of_model = 3;
 const std::size_t first_state = 1;
 const int magnetic_qnumber = 1;
-const bool with_decay = false;
+const bool with_decay = true;
 
 const double adiabatic = 1.2;
-const double rabi_rate = 1.;
+const double rabi_rate = 25;
 const double omega_hw = u::tau * 500. * u::GHz;
 
 
@@ -38,6 +38,7 @@ private:
   int index_;
 
   std::unique_ptr<TGraph> g_cor_;
+  std::unique_ptr<TGraph> g_pure_;
   std::array<std::unique_ptr<TGraph>, size_of_model> g_arr_;
 
   std::unique_ptr<TGraph> GraphInitialize(
@@ -68,6 +69,7 @@ public:
     index_ = 0;
 
     g_cor_ = std::move(GraphInitialize("g_correctly", "Total Probability"));
+    g_pure_ = std::move(GraphInitialize("g_purely", "Purity"));
     for (auto i : csp::Range<std::size_t>(1, size_of_model)) {
       g_arr_[i] = std::move(GraphInitialize(
         "g_excited_" + std::to_string(i),
@@ -83,6 +85,9 @@ public:
   void Set(const Simulator<size_of_model>::Mat& dmat, const double time)
   {
     g_cor_->SetPoint(index_, to_time_ns(time), std::abs(dmat.trace()));
+    if (!with_decay) {
+      g_pure_->SetPoint(index_, to_time_ns(time), std::abs((dmat * dmat).trace()));
+    }
 
     for (std::size_t i = 0; i < size_of_model; ++i) {
       g_arr_[i]->SetPoint(
@@ -98,6 +103,14 @@ public:
       rs::graph::SetLimitY(g_cor_, {0.999, 1.001});
       rs::draw::FastSaveToFile(
         g_cor_, result_dirpath / (std::string(g_cor_->GetName()) + ".png"), "AL"
+      );
+    }
+
+    if (!with_decay) {
+      rs::graph::SetLimitY(g_pure_, {0.999, 1.001});
+      rs::draw::FastSaveToFile(
+        g_pure_,
+        result_dirpath / (std::string(g_pure_->GetName()) + ".png"), "AL"
       );
     }
 

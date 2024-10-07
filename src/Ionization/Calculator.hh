@@ -14,7 +14,7 @@ namespace Ionization
 {
 
 constexpr double ps_reduced_mass = u::m_e / 2.;
-constexpr double hydrogen_reduced_mass = u::m_e / (1. + 1. / 1836.);
+constexpr double hydrogen_reduced_mass = u::m_e / (1. + u::m_e / u::m_p);
 
 const std::string l_to_str(const int l)
 {

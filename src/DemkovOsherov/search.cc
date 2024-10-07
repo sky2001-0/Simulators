@@ -21,15 +21,22 @@ using namespace simulators_support;
 using namespace rs::utils;
 using namespace DemkovOsherovModel;
 
-constexpr std::size_t size_of_model = 2;
+constexpr std::size_t size_of_model = 3;
 const std::size_t first_state = 0;
-const int magnetic_qnumber = 1;
+const int magnetic_qnumber = 0;
 const bool with_decay = true;
 
-const auto adiabatic_range = csp::Range<double>(0.5, 2.9, 36, false);
-const std::vector<double> rabi_rate_range = {
-  0.02, 0.05, 0.1, 0.2, 0.5, 1., 2., 5., 10., 20.
+auto func = []()
+{
+  std::vector<double> result;
+  for (auto d : csp::Range<double>(-2., 2., 21, true)) {
+    result.push_back(std::pow(10., d));
+  }
+  return result;
 };
+
+const auto adiabatic_range = csp::Range<double>(0.5, 2.9, 36, false);
+const std::vector<double> rabi_rate_range = func();
 
 
 
