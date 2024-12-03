@@ -1,5 +1,5 @@
-#ifndef SIMULATORS_HH
-#define SIMULATORS_HH
+#ifndef SIMULATORS_H
+#define SIMULATORS_H
 
 #include <filesystem>
 #include <iostream>
@@ -14,7 +14,7 @@ namespace simulators_support
   void CCheck()
   {
     const std::filesystem::path current_path = std::filesystem::current_path();
-    if (!std::filesystem::exists(current_path / "lib" / "Simulators.hh")) {
+    if (!std::filesystem::exists(current_path / "lib" / "Simulators.h")) {
       std::cout
         << "Current working path is not expected one."
         << "Do you continue? [y/N]";
@@ -31,4 +31,4 @@ namespace simulators_support
 
 
 
-#endif // SIMULATORS
+#endif // SIMULATORS_H

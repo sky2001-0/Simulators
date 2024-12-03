@@ -1,13 +1,15 @@
 #include <iostream>
 #include <string>
 
-#include "../../lib/Simulators.hh"
-#include "../../lib/include/globals.hh"
-#include "../../lib/RootSupport/RootSupport.hh"
+#include "../../lib/Simulators.h"
+#include "../../lib/include/src/globals.h"
+#include "../../lib/RootSupport/RootSupport.h"
 
 #include "TGraph.h"
 
-#include "Calculator.hh"
+#include "Calculator.h"
+
+
 
 using namespace simulators_support;
 using namespace rs::utils;
@@ -31,7 +33,7 @@ void draw()
       "light wavelength (nm)", "cross-section (Mb)"
     );
 
-    Calculator c(ps_reduced_mass, n, l);
+    Calculator c(ps::reduced_mass, n, l);
 
     auto ran = c.GetRange();
     for (int i = 0; i < 100; ++i) {
@@ -50,9 +52,7 @@ void draw()
   func(2, 0);
   func(2, 1);
 
-  Calculator c(ps_reduced_mass, 2, 1);
-  std::cout << (
-    c.Calc(243. * u::nm)
-  ) / u::m / u::m << " m2" << std::endl;
+  // Calculator c(ps::reduced_mass, 2, 1);
+  // std::cout << c.Calc(243. * u::nm) / u::m / u::m << " m^2" << std::endl;
 }
 

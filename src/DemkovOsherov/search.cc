@@ -10,111 +10,98 @@
 #include "TF1.h"
 #include "TTree.h"
 
-#include "../../lib/Simulators.hh"
-#include "../../lib/include/globals.hh"
-#include "../../lib/include/Support.hh"
-#include "../../lib/RootSupport/RootSupport.hh"
+#include "../../lib/include/src/globals.h"
+#include "../../lib/include/src/ProgressBar.h"
+#include "../../lib/include/src/Range.h"
+#include "../../lib/RootSupport/RootSupport.h"
+#include "../../lib/Simulators.h"
 
-#include "Model.hh"
+#include "Model.h"
 
 using namespace simulators_support;
 using namespace rs::utils;
 using namespace DemkovOsherovModel;
 
-constexpr std::size_t size_of_model = 3;
+
+
+constexpr std::size_t size_of_model = 2;
 const std::size_t first_state = 0;
-const int magnetic_qnumber = 0;
+const int magnetic_qnumber = 1;
 const bool with_decay = true;
 
-auto func = []()
-{
-  std::vector<double> result;
-  for (auto d : csp::Range<double>(-2., 2., 21, true)) {
-    result.push_back(std::pow(10., d));
-  }
-  return result;
+const std::vector<std::string> branch_names = {
+  "adiabatic/D", "rabi_rate/D", "max_prob/D", "max_time_ns/D"
 };
 
 const auto adiabatic_range = csp::Range<double>(0.5, 2.9, 36, false);
-const std::vector<double> rabi_rate_range = func();
-
-
-
-class TreeObj
-{
-private:
-  const std::size_t size_;
-  const std::unique_ptr<TTree> tree_;
-
-  double adiabatic_;
-  double rabi_rate_;
-
-  double max_prob_;
-  double max_time_;
-  double correctly_;
-
-public:
-  TreeObj(const std::size_t size)
-  : size_(size),
-    tree_(std::make_unique<TTree>("tree", "title"))
+const std::vector<double> rabi_rate_range = (
+  []()
   {
-    tree_->Branch("adiabatic", &adiabatic_, "adiabatic/D");
-    tree_->Branch("rabi_rate", &rabi_rate_, "rabi_rate/D");
-    tree_->Branch("max_prob", &max_prob_, "max_prob/D");
-    tree_->Branch("max_time_ns", &max_time_, "max_time_ns/D");
-  }
-
-  ~TreeObj()
-  {
-    auto file = rs::file::Create(
-      result_dirpath / ("tree" + std::to_string(size_of_model) + ".root")
-    );
-    tree_->Write();
-  }
-
-  void Simulate(const double adiabatic, const double rabi_rate)
-  {
-    adiabatic_ = adiabatic;
-    rabi_rate_ = rabi_rate;
-    max_prob_ = 0.;
-
-    auto sim = ps_ortho1S2P::Create<size_of_model>(
-      adiabatic_, rabi_rate_, magnetic_qnumber, with_decay
-    );
-    auto dmat = sim.InitialState();
-    double time_n = -sim.get_inf();
-
-    for (std::size_t i = 0; i < sim.get_size(); ++i) {
-      sim.RK4(dmat, time_n);
-      if (std::abs(dmat.getf(1, 1)) > max_prob_) {
-        max_prob_ = std::abs(dmat.getf(1, 1));
-        max_time_ = time_n;
-      }
+    std::vector<double> result;
+    for (auto d : csp::Range<double>(-2., 2., 21, true)) {
+      result.push_back(std::pow(10., d));
     }
-    max_time_ /= ps_ortho1S2P::Calc_norml(adiabatic, rabi_rate);
-    max_time_ /= u::ns;
+    return result;
+  }()
+);
 
-    correctly_ = std::abs(dmat.trace());
-
-    tree_->Fill();
-  }
-};
 
 
 void search()
 {
   CCheck();
-  rs::utils::SetStyle();
-  rs::utils::IgnoreWarning();
+  SetStyle();
+  IgnoreWarning();
 
-  auto to = TreeObj(size_of_model);
+  rs::TreeHelper th = {branch_names};
+
   csp::ProgressBar<std::size_t> pb(
     adiabatic_range.size() * rabi_rate_range.size()
   );
+
   for (auto adiabatic : adiabatic_range) {
+    th.get("adiabatic/D") = adiabatic;
     for (auto rabi_rate : rabi_rate_range) {
-      to.Simulate(adiabatic, rabi_rate);
+      th.get("rabi_rate/D") = rabi_rate;
+
+      const double rabi = rabi_rate * ps::split_02;
+      const double chirp_rate = std::pow(rabi / adiabatic, 2) / 2.;
+
+      {
+        auto sim = Simulator<size_of_model>::PsOrtho1S2P(
+          chirp_rate, rabi, magnetic_qnumber, with_decay
+        );
+        auto dmat = sim.InitialState(first_state);
+        double time_n = sim.time_start();
+
+        double max_prob = 0.;
+        double max_time_n = 0.;
+
+        for (int i = 0; i < sim.size(); ++i) {
+          sim.RK4(dmat, time_n);
+          const double prob = std::abs(
+            dmat.getf(size_of_model - 2, size_of_model - 2)
+          );
+          if (prob > max_prob) {
+            max_prob = prob;
+            max_time_n = time_n;
+          }
+        }
+
+        th.get("max_time_ns/D") = max_time_n / std::sqrt(chirp_rate) / u::ns;
+        th.get("max_prob/D") = max_prob;
+
+        double correctly = std::abs(dmat.trace());
+      }
+
+      th.Fill();
       ++pb;
     }
   }
+
+  auto file = rs::file::Create(
+    result_dirpath / ("tree" + std::to_string(size_of_model) + ".root")
+  );
+
+  th.Write();
 }
