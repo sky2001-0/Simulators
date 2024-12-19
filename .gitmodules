@@ -1,0 +1,6 @@
+[submodule "lib/include"]
+	path = lib/include
+	url = git@github.com:sky2001-0/include.git
+[submodule "lib/RootSupport"]
+	path = lib/RootSupport
+	url = git@github.com:sky2001-0/RootSupport
