@@ -75,14 +75,14 @@ public:
       if (magnetic_qnumber == 0) {
         return {
           {0., 2. * ps::split_02 / norml},
-          {rabi_n * 2. / 3., rabi_n * 4. / 3.},
+          {rabi_n / std::sqrt(3.), rabi_n * std::sqrt(2. / 3.)},
           {gamma_n, gamma_n}
         };
 
       } else if (std::abs(magnetic_qnumber) == 1) {
         return {
           {0., 2. * ps::split_12 / norml},
-          {rabi_n, rabi_n},
+          {rabi_n / std::sqrt(2.), rabi_n / std::sqrt(2.)},
           {gamma_n, gamma_n}
         };
       }

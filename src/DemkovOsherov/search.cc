@@ -24,7 +24,7 @@ using namespace DemkovOsherovModel;
 
 
 
-constexpr std::size_t size_of_model = 2;
+constexpr std::size_t size_of_model = 3;
 const std::size_t first_state = 0;
 const int magnetic_qnumber = 1;
 const bool with_decay = true;
@@ -88,8 +88,6 @@ void search()
 
         th.get("max_time_ns/D") = max_time_n / std::sqrt(chirp_rate) / u::ns;
         th.get("max_prob/D") = max_prob;
-
-        // double correctly = std::abs(dmat.trace());
       }
 
       th.Fill();
@@ -98,7 +96,14 @@ void search()
   }
 
   auto file = rs::file::Create(
-    result_dirpath / ("tree" + std::to_string(size_of_model) + ".root")
+    result_dirpath
+    / (
+      "tree"
+      + std::to_string(size_of_model)
+      + "_"
+      + std::to_string(magnetic_qnumber)
+      + ".root"
+    )
   );
 
   th.Write();
