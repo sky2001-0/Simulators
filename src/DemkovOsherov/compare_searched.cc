@@ -25,10 +25,14 @@ void compare_searched()
 	IgnoreWarning();
 
 	auto f0 = rs::file::Open("result/tree3_0.root");
- 	auto th0 = rs::TreeHelper(std::move(rs::file::GetObj<TTree>("tree", f0.get())));
+ 	auto th0 = rs::TreeHelper(std::move(
+		rs::file::GetObj<TTree>("tree", f0.get())
+	));
 
 	auto f1 = rs::file::Open("result/tree3_1.root");
- 	auto th1 = rs::TreeHelper(std::move(rs::file::GetObj<TTree>("tree", f1.get())));
+ 	auto th1 = rs::TreeHelper(std::move(
+		rs::file::GetObj<TTree>("tree", f1.get())
+	));
 
 	const Int_t n = th0.GetEntries();
 
@@ -49,7 +53,11 @@ void compare_searched()
 		if (
 			max_prob0 < 0.95
 			|| max_prob1 < 0.95
-			|| max_prob0 + 2. * max_prob1 < 2.9
+			|| (
+				max_prob0 * std::exp(ps::gamma0 * (max_time0 - max_time1) * u::ns)
+				+ 2. * max_prob1
+			 ) / 3. < 0.96
+			|| rabi_rate0 * ps::split_02 / std::sqrt(2.) / u::tau / u::GHz > 50.
 		) {
 			continue;
 		}
@@ -60,24 +68,29 @@ void compare_searched()
 			/ std::pow(3., 5) / u::alpha / u::m_e / u::c
 		);
 		std::cout
-			<< "u (GHz/ps), F (W/mm^2) = "
-			<< std::pow(rabi / adiabatic0, 2) / 2. / u::GHz * u::ps;
+			<< "u (GHz/ps), F (kW/mm^2), Omega (GHz) = \t"
+			<< std::pow(rabi / adiabatic0, 2) / 2.  / u::tau / u::GHz * u::ps
 			<< "\t"
 			<< (
 				u::c * u::epsilon_0 * std::pow(u::hbar * rabi / dipole, 2)
-				/ u::W * u::mm * u::mm
-			);
+				/ u::kW * u::mm * u::mm
+			)
+			<< "\t"
+			<< rabi / std::sqrt(2.) / u::tau / u::GHz
 			<< std::endl
 			<< "Value : "
-			<< max_prob0 + 2. * max_prob1
-			<< "(p0, p1, t0, t1) = "
+			<< (
+				max_prob0 * std::exp(ps::gamma0 * (max_time0 - max_time1) * u::ns)
+				+ 2. * max_prob1
+			) / 3.
+			<< "(p0, p1, t0 (ps), t1 (ps)) = "
 			<< max_prob0
 			<< "\t"
 			<< max_prob1
 			<< "\t"
-			<< max_time0
+			<< max_time0 * u::ns / u::ps
 			<< "\t"
-			<< max_time1
+			<< max_time1 * u::ns / u::ps
 			<< std::endl
 			<< std::endl;
 	}

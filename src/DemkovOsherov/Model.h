@@ -275,7 +275,8 @@ public:
     const Simulator<SizeOfModel>& sim,
     const double chirp_rate,
     const std::filesystem::path result_dirpath,
-    const bool graph_cut
+    const bool graph_cut,
+    const int mag = 1
   )
   : sim_(sim),
     norml_(std::sqrt(chirp_rate)),
@@ -284,17 +285,21 @@ public:
   {
     index_ = 0;
 
-    g_cor_ = std::move(GraphInitialize("g_correctly", "Total Probability"));
-    g_pure_ = std::move(GraphInitialize("g_purely", "Purity"));
+    g_cor_ = std::move(GraphInitialize(
+      "g_correctly", "Total Probability", mag
+    ));
+    g_pure_ = std::move(GraphInitialize("g_purely", "Purity", mag));
     for (std::size_t i = 0; i < SizeOfModel; ++i) {
       g_arr_[i] = std::move(GraphInitialize(
         "g_excited_" + std::to_string(i),
-        "the probability of excited state " + std::to_string(i)
+        "the probability of excited state " + std::to_string(i),
+        mag
       ));
     }
     g_arr_[0] = std::move(GraphInitialize(
       "g_ground",
-      "the probability of ground state"
+      "the probability of ground state",
+      mag
     ));
   }
 
@@ -375,11 +380,11 @@ private:
   }
 
   std::unique_ptr<TGraph> GraphInitialize(
-    const std::string name, const std::string title
+    const std::string name, const std::string title, const int mag
   )
   {
     return std::move(rs::graph::Create<TGraph>(
-      sim_.size(),
+      sim_.size() * mag,
       name.c_str(),
       ("time evolution of " + title).c_str(),
       "time (ns)",

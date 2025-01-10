@@ -15,7 +15,7 @@ using namespace DemkovOsherovModel;
 
 
 constexpr std::size_t size_of_model = 3;
-const std::size_t first_state = 1;
+const std::size_t first_state = 0;
 const int magnetic_qnumber = 1;
 const bool with_decay = false;
 
@@ -39,7 +39,7 @@ const double rabi_rate = 2. / dipole_corr;
 
 
 
-void draw()
+void draw_swap()
 {
   CCheck();
   SetStyle();
@@ -64,15 +64,24 @@ void draw()
 
   ResultData result = {
     sim, chirp_rate, result_dirpath,
-    true //(size_of_model == 2) || (first_state == 0)
+    false, //(size_of_model == 2) || (first_state == 0)
+    2
   };
   {
     auto dmat = sim.InitialState(first_state);
-    double time_n = sim.time_start();
-    csp::ProgressBar<std::size_t> pb(sim.size());
+    const double time_0 = sim.time_start();
 
+    csp::ProgressBar<std::size_t> pb(2. * sim.size());
+
+    double time_n = time_0;
     for (int i = 0; i < sim.size(); ++i, ++pb) {
-      result.Set(dmat, time_n);
+      result.Set(dmat, time_n + time_0);
+      sim.RK4(dmat, time_n);
+    }
+
+    time_n = time_0;
+    for (int i = 0; i < sim.size(); ++i, ++pb) {
+      result.Set(dmat, time_n - time_0);
       sim.RK4(dmat, time_n);
     }
   }

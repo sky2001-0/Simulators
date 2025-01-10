@@ -24,6 +24,23 @@ void analyze_searched(const std::filesystem::path treefile_path)
 	SetStyle();
 	IgnoreWarning();
 
+	const std::string treefile_name = treefile_path.stem();
+
+	const double dipole_corr = (
+		[treefile_name] () -> double {
+			const std::string tmp = treefile_name.substr(4);
+			if (tmp == "2") {
+				return 1.;
+			} else if (tmp == "3_0") {
+				return std::sqrt(1. / 3.);
+			} else if (tmp == "3_1") {
+				return std::sqrt(1. / 2.);
+			} else {
+				throw std::runtime_error("Invalid name.");
+			}
+		} ()
+	);
+
 	auto f = rs::file::Open(treefile_path);
  	auto th = rs::TreeHelper(std::move(rs::file::GetObj<TTree>("tree", f.get())));
 
@@ -81,7 +98,7 @@ void analyze_searched(const std::filesystem::path treefile_path)
 		<< max_prob_max
 		<< std::endl
 		<< "Adiabatic : "
-		<< adiabatic_max
+		<< adiabatic_max * dipole_corr
 		<< std::endl
 		<< "Max time : "
 		<< max_time_max
@@ -95,24 +112,10 @@ void analyze_searched(const std::filesystem::path treefile_path)
 		<< " GHz / ns"
 		<< std::endl
 		<< "Rabi Freq : "
-		<< rabi_rate_max * ps::split_02 / u::tau / u::GHz
+		<< rabi_rate_max * dipole_corr * ps::split_02 / u::tau / u::GHz
 		<< " GHz"
 		<< std::endl;
 
-	const std::string treefile_name = treefile_path.stem();
-
-	const double dipole_corr = [treefile_name] () {
-		const std::string tmp = treefile_name.substr(4);
-		if (tmp == "2") {
-			return 1.;
-		} else if (tmp == "3_0") {
-			return std::sqrt(1. / 3.);
-		} else if (tmp == "3_0") {
-			return std::sqrt(1. / 2.);
-		} else {
-			std::runtime_error("Invalid name.");
-		}
-	};
 	{
 		g1->Scale(dipole_corr, "X");
 		rs::draw::FastSaveToFile(
@@ -122,7 +125,7 @@ void analyze_searched(const std::filesystem::path treefile_path)
 	{
     auto c = std::make_unique<TCanvas>(g2->GetName(), g2->GetTitle());
 		c->SetLogx();
-		g2->Scale(ps::split_02 / u::tau / u::GHz, "X");
+		g2->Scale(dipole_corr * ps::split_02 / u::tau / u::GHz, "X");
     g2->Draw("AP");
 		c->SaveAs(
       (result_dirpath / (treefile_name + g2->GetName() + ".png")).c_str()
@@ -137,7 +140,7 @@ void analyze_searched(const std::filesystem::path treefile_path)
 	{
     auto c = std::make_unique<TCanvas>(g4->GetName(), g4->GetTitle());
 		c->SetLogx();
-		g4->Scale(ps::split_02 / u::tau / u::GHz, "X");
+		g4->Scale(dipole_corr * ps::split_02 / u::tau / u::GHz, "X");
     g4->Draw("AP");
 		c->SaveAs(
       (result_dirpath / (treefile_name + g4->GetName() + ".png")).c_str()
