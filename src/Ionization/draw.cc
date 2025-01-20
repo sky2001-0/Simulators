@@ -44,7 +44,9 @@ void draw()
 
     g->SetMinimum(0.);
 
-    rs::draw::FastSaveToFile(g, result_dirpath / (state_name + ".png"), "AL");
+    rs::draw::FastSaveToFile(
+      g.get(), result_dirpath / ("Ionize_" + state_name + ".png"), "AL"
+    );
   };
 
 
@@ -52,7 +54,15 @@ void draw()
   func(2, 0);
   func(2, 1);
 
-  // Calculator c(ps::reduced_mass, 2, 1);
-  // std::cout << c.Calc(243. * u::nm) / u::m / u::m << " m^2" << std::endl;
+  Calculator c(ps::reduced_mass, 2, 1);
+  std::cout
+    << "243nm : "
+    << c.Calc(243. * u::nm) / u::m / u::m
+    << " m^2"
+    << std::endl
+    << "532nm : "
+    << c.Calc(532. * u::nm) / u::m / u::m
+    << " m^2"
+    << std::endl;
 }
 

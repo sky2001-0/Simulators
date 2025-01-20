@@ -35,6 +35,11 @@ namespace ps
     * std::pow(u::hbar / u::m_e, 2)
     / u::alpha
   );
+
+  const double dipole0 = (
+    std::pow(2., 8.5) * u::e * u::hbar
+    / std::pow(3., 5) / u::alpha / u::m_e / u::c
+  );
 }
 
 
@@ -392,6 +397,27 @@ private:
     ));
   }
 };
+
+
+void CreateCustomPalette()
+{
+	const int num_color = 99;
+	double stops[num_color];
+	double red[num_color];
+	double green[num_color];
+	double blue[num_color];
+
+	for (int i = 0; i < num_color; ++i) {
+			stops[i] = static_cast<double>(i) / (num_color - 1);
+			const double c = std::pow(stops[i], 6);
+			red[i] = std::pow(c, 2);
+			green[i] = 4. * (c - std::pow(c, 2));
+			blue[i] = std::pow(1. - c, 2);
+	}
+
+	TColor::CreateGradientColorTable(num_color, stops, red, green, blue, 255);
+	gStyle->SetNumberContours(num_color);
+}
 
 
 }

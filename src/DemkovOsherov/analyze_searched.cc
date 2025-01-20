@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include "TGraph2D.h"
+
 #include "../../lib/include/src/globals.h"
 #include "../../lib/include/src/Range.h"
 #include "../../lib/RootSupport/RootSupport.h"
@@ -15,7 +17,7 @@
 
 using namespace simulators_support;
 using namespace rs::utils;
-
+using namespace DemkovOsherovModel;
 
 
 void analyze_searched(const std::filesystem::path treefile_path)
@@ -23,6 +25,7 @@ void analyze_searched(const std::filesystem::path treefile_path)
 	CCheck();
 	SetStyle();
 	IgnoreWarning();
+	CreateCustomPalette();
 
 	const std::string treefile_name = treefile_path.stem();
 
@@ -45,6 +48,8 @@ void analyze_searched(const std::filesystem::path treefile_path)
  	auto th = rs::TreeHelper(std::move(rs::file::GetObj<TTree>("tree", f.get())));
 
 	const Int_t n = th.GetEntries();
+
+	auto g0 = std::make_unique<TGraph2D>(n);
 
 	auto g1 = rs::graph::Create(
 		n, nullptr, "prob_adiabatic", "adiabatic", "max_prob"
@@ -81,6 +86,7 @@ void analyze_searched(const std::filesystem::path treefile_path)
 		const double max_prob = std::get<double>(th.cget("max_prob/D"));
 		const double max_time = std::get<double>(th.cget("max_time_ns/D"));
 
+		g0->SetPoint(entry, adiabatic, rabi_rate, max_prob);
 		g1->SetPoint(entry, adiabatic, max_prob);
 		g2->SetPoint(entry, rabi_rate, max_prob);
 		g3->SetPoint(entry, adiabatic, max_time);
@@ -116,6 +122,25 @@ void analyze_searched(const std::filesystem::path treefile_path)
 		<< " GHz"
 		<< std::endl;
 
+	{
+		g0->Scale(dipole_corr, "X");
+		g0->Scale(dipole_corr * ps::split_02 / u::tau / u::GHz, "Y");
+
+		g0->SetTitle("max_prob");
+		g0->SetMinimum(0.);
+    g0->SetMaximum(1.);
+
+		auto c = std::make_unique<TCanvas>("prob", "prob");
+		c->SetLogy();
+
+		g0->Draw("TRI2");
+    g0->GetXaxis()->SetTitle("adiabatic");
+    g0->GetYaxis()->SetTitle("Rabi Freq (GHz)");
+    g0->GetZaxis()->SetTitle("max_prob");
+		c->SaveAs(
+      (result_dirpath / (treefile_name + "prob.png")).c_str()
+    );
+	}
 	{
 		g1->Scale(dipole_corr, "X");
 		rs::draw::FastSaveToFile(

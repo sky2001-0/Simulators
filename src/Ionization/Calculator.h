@@ -6,6 +6,7 @@
 #include <string>
 
 #include "../../lib/include/src/globals.h"
+#include "../../lib/include/src/Range.h"
 #include "../../lib/include/src/Support.h"
 
 
