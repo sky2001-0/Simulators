@@ -61,6 +61,9 @@ void draw_swap()
   auto sim = Simulator<size_of_model>::PsOrtho1S2P(
     chirp_rate, rabi, magnetic_qnumber, with_decay
   );
+  auto sim2 = Simulator<size_of_model>::PsOrtho1S2P(
+    -chirp_rate, rabi, magnetic_qnumber, with_decay
+  );
 
   ResultData result = {
     sim, chirp_rate, result_dirpath,
@@ -82,7 +85,7 @@ void draw_swap()
     time_n = time_0;
     for (int i = 0; i < sim.size(); ++i, ++pb) {
       result.Set(dmat, time_n - time_0);
-      sim.RK4(dmat, time_n);
+      sim2.RK4(dmat, time_n);
     }
   }
 

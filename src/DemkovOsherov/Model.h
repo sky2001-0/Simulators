@@ -67,13 +67,22 @@ public:
     const bool with_decay
   )
   {
-    const double norml = std::sqrt(chirp_rate);
+    const double norml = std::sqrt(std::abs(chirp_rate));
     const double rabi_n = rabi / norml;
     const double gamma_n = with_decay ? ps::gamma0 / norml : 0.;
 
+    double sign;
+    if (chirp_rate > 0) {
+      sign = 1.;
+    } else if (chirp_rate < 0) {
+      sign = -1.;
+    } else {
+      throw std::runtime_error("chirp_rate is zero.");
+    }
+
     if constexpr (SizeOfModel == 2) {
       if (std::abs(magnetic_qnumber) == 1) {
-        return {{0.}, {rabi_n}, {gamma_n}};
+        return {{0.}, {rabi_n}, {gamma_n}, sign};
       }
 
     } else if constexpr (SizeOfModel == 3) {
@@ -81,14 +90,16 @@ public:
         return {
           {0., 2. * ps::split_02 / norml},
           {rabi_n / std::sqrt(3.), rabi_n * std::sqrt(2. / 3.)},
-          {gamma_n, gamma_n}
+          {gamma_n, gamma_n},
+          sign
         };
 
       } else if (std::abs(magnetic_qnumber) == 1) {
         return {
           {0., 2. * ps::split_12 / norml},
           {rabi_n / std::sqrt(2.), rabi_n / std::sqrt(2.)},
-          {gamma_n, gamma_n}
+          {gamma_n, gamma_n},
+          sign
         };
       }
     }
@@ -107,6 +118,7 @@ private:
   const Arr decays_;
   const double time_transition_;
   const double time_step_;
+  const double sign_;
 
 
 public:
@@ -116,12 +128,14 @@ public:
   Simulator(
     const std::array<double, SizeOfModel - 1>& energies,
     const std::array<std::complex<double>, SizeOfModel - 1>& rabis,
-    const std::array<double, SizeOfModel - 1>& decays
+    const std::array<double, SizeOfModel - 1>& decays,
+    const double sign
   )
   : hmat_(std::move(CreateMat(energies, rabis))),
     decays_(decays),
     time_transition_(CalcTransitionTime(rabis)),
-    time_step_(time_transition_ / kPrecision)
+    time_step_(time_transition_ / kPrecision),
+    sign_(sign)
   {
   }
 
@@ -172,11 +186,19 @@ public:
 
     else {
       double tmp = 1.;
-      for (std::size_t j = 1; j < i; ++j) {
-        tmp *= std::exp(-u::pi * func(j));
+      if (sign_ > 0.) {
+        for (std::size_t j = 1; j < i; ++j) {
+          tmp *= std::exp(-u::pi * func(j));
+        }
+        tmp *= 1. - std::exp(-u::pi * func(i));
+        return tmp;
+      } else {
+        for (std::size_t j = SizeOfModel - 1; i < j; --j) {
+          tmp *= std::exp(-u::pi * func(j));
+        }
+        tmp *= 1. - std::exp(-u::pi * func(i));
+        return tmp;
       }
-      tmp *= 1. - std::exp(-u::pi * func(i));
-      return tmp;
     }
   }
 
@@ -198,7 +220,7 @@ public:
 private:
   Mat Step(const Mat& dmat, const double time) noexcept
   {
-    hmat_.getf(0, 0) = -u::i * time;
+    hmat_.getf(0, 0) = -sign_ * u::i * time;
     Mat result = hmat_.commute(dmat);
 
     for (std::size_t i = 1; i < SizeOfModel; ++i) {
